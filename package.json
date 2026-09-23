@@ -1,0 +1,34 @@
+{
+  "name": "outline-render",
+  "version": "0.1.0",
+  "description": "Render structured spec/schema files (OpenAPI, Prisma, Cube, ...) into markdown documentation.",
+  "type": "module",
+  "bin": {
+    "outline-render": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "scripts": {
+    "prepare": "npm run build",
+    "build": "tsc && chmod +x dist/cli.js",
+    "test": "npm run build && node --test dist/renderers/*.test.js dist/*.test.js",
+    "test:watch": "npm run build && node --test --watch dist/renderers/*.test.js dist/*.test.js"
+  },
+  "dependencies": {
+    "acorn": "^8.18.0",
+    "bpmn-moddle": "^10.2.0",
+    "dmn-moddle": "^12.1.0",
+    "slugify": "^1.6.9",
+    "yaml": "^2.5.0",
+    "zeebe-bpmn-moddle": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "private": true
+}

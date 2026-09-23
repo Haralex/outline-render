@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: Example Orders API
+  description: |
+    Representative spec used to test the openapi renderer - not a real
+    service. Exercises tags, path/query params, a request body with a
+    $ref schema, and multiple response codes. Aligned to the same
+    Account/Order/OrderItem domain as examples/example-schema.prisma,
+    rather than an unrelated one, so the two examples read as one
+    consistent data catalogue if published together.
+  version: "1.0.0"
+paths:
+  /orders:
+    get:
+      tags: [Orders]
+      summary: List orders
+      description: Returns orders placed by a given account, optionally filtered by status.
+      parameters:
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The account to list orders for.
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by order status (pending, paid, shipped, cancelled).
+      responses:
+        "200":
+          description: A list of orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "404":
+          description: Account not found.
+    post:
+      tags: [Orders]
+      summary: Place an order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderCreateRequest"
+      responses:
+        "201":
+          description: Order created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid request body.
+  /orders/{order_id}:
+    get:
+      tags: [Orders]
+      summary: Get a single order
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found.
+  /accounts/{account_id}/summary:
+    get:
+      tags: [Accounts]
+      summary: Get an account's order summary
+      description: |
+        Returns aggregate order activity for an account - order count and
+        most recent order timestamp.
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The account summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountSummary"
+
+components:
+  schemas:
+    Order:
+      type: object
+      required: [id, status, total_amount]
+      properties:
+        id:
+          type: string
+          description: Unique order ID.
+        status:
+          type: string
+          description: One of pending, paid, shipped, cancelled.
+        total_amount:
+          type: integer
+          description: Order total, in cents.
+        account:
+          $ref: "#/components/schemas/AccountRef"
+    AccountRef:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    OrderCreateRequest:
+      type: object
+      required: [account_id, item_sku]
+      properties:
+        account_id:
+          type: string
+          description: Account to associate the order with.
+        item_sku:
+          type: string
+          description: SKU of the item being ordered.
+    AccountSummary:
+      type: object
+      properties:
+        account_id:
+          type: string
+        order_count:
+          type: integer
+          description: Total number of orders placed.
+        last_order_at:
+          type: string
+          description: ISO 8601 timestamp of the most recent order.

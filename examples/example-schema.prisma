@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A billing account - the top-level entity every order belongs to.
+model Account {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  /// Registered company name.
+  name      String
+  /// Primary contact email - unique across all accounts.
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  orders    Order[]
+
+  @@map("accounts")
+}
+
+/// A customer order, made up of one or more line items.
+model Order {
+  id          Int         @id @default(autoincrement())
+  account     Account     @relation(fields: [accountId], references: [id])
+  accountId   String
+  /// Order status - drives which actions are available in the UI.
+  status      OrderStatus @default(PENDING)
+  /// Total order value, in the account's billing currency.
+  totalAmount Decimal
+  placedAt    DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       OrderItem[]
+
+  @@index([accountId])
+  @@map("orders")
+}
+
+/// One line item within an order - a specific product/quantity/price combination.
+model OrderItem {
+  id         Int     @id @default(autoincrement())
+  order      Order   @relation(fields: [orderId], references: [id])
+  orderId    Int
+  /// SKU of the product ordered.
+  productSku String
+  quantity   Int     @default(1)
+  unitPrice  Decimal
+  /// Arbitrary line-item metadata, e.g. gift-wrapping preferences.
+  metadata   Json?
+
+  @@unique([orderId, productSku])
+}
+
+enum OrderStatus {
+  /// Order placed, awaiting payment confirmation.
+  PENDING
+  /// Payment confirmed, awaiting fulfilment.
+  PAID
+  /// Order has shipped to the customer.
+  SHIPPED
+  /// Order was cancelled before shipping.
+  CANCELLED
+}

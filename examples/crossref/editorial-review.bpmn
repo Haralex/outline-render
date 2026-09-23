@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Part of the examples/crossref/ set. A second, independent process
+     that also calls content_tone.dmn - its decision page should list
+     both this process and content-approval.bpmn under "Used by". -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+                  id="Definitions_2"
+                  targetNamespace="http://bpmn.io/schema/bpmn"
+                  exporter="Camunda Modeler"
+                  exporterVersion="5.0.0">
+
+  <bpmn:process id="editorial-review" name="Editorial Review" isExecutable="true">
+
+    <bpmn:startEvent id="StartEvent_1" name="Draft ready for review">
+      <bpmn:outgoing>Flow_start_to_tone</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:businessRuleTask id="Task_DetermineTone" name="Determine tone">
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="content_tone" resultVariable="tone" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_to_tone</bpmn:incoming>
+      <bpmn:outgoing>Flow_tone_to_notify</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+
+    <bpmn:serviceTask id="Task_NotifyEditor" name="Notify editor">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="notify-editor" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_tone_to_notify</bpmn:incoming>
+      <bpmn:outgoing>Flow_notify_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_1" name="Review complete">
+      <bpmn:incoming>Flow_notify_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_start_to_tone" sourceRef="StartEvent_1" targetRef="Task_DetermineTone" />
+    <bpmn:sequenceFlow id="Flow_tone_to_notify" sourceRef="Task_DetermineTone" targetRef="Task_NotifyEditor" />
+    <bpmn:sequenceFlow id="Flow_notify_to_end" sourceRef="Task_NotifyEditor" targetRef="EndEvent_1" />
+
+  </bpmn:process>
+
+</bpmn:definitions>

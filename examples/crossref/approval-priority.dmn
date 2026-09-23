@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Part of the examples/crossref/ set - unlike content-tone.dmn, this
+     decision is called by only one process (content-approval.bpmn), to
+     show a "Used by" line naming a single process rather than several. -->
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="d2" name="Approval Priority" namespace="http://example.com" exporter="Camunda Modeler" exporterVersion="5.0.0">
+  <decision id="approval_priority" name="Approval Priority">
+    <decisionTable id="dt2">
+      <input id="in1" label="Tone">
+        <inputExpression id="ie1" typeRef="string">
+          <text>tone</text>
+        </inputExpression>
+      </input>
+      <output id="out1" label="Priority" name="priority" typeRef="string" />
+      <rule id="r1">
+        <inputEntry id="ie2"><text>"formal"</text></inputEntry>
+        <outputEntry id="oe1"><text>"high"</text></outputEntry>
+      </rule>
+      <rule id="r2">
+        <inputEntry id="ie3"><text>"casual"</text></inputEntry>
+        <outputEntry id="oe2"><text>"normal"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

@@ -1,0 +1,76 @@
+name: "outline-render"
+description: >-
+  Set up outline-render (render structured spec/schema files to markdown,
+  publish to Outline) as a CLI on PATH for later steps in this job.
+author: "outline-render contributors"
+
+inputs:
+  version:
+    description: >-
+      git ref of outline-render to install (branch, tag, or commit).
+      Defaults to main - pin to a tag/commit once this repo has releases,
+      for a stable CI pipeline that doesn't shift under you.
+    required: false
+    default: "main"
+  node-version:
+    description: "Node version to set up."
+    required: false
+    default: "22"
+  outline-api-key:
+    description: >-
+      OUTLINE_API_KEY, exported for later steps. Only needed if a later
+      step calls `outline-render publish`/`publish-tree`/`delete-collection`
+      - pass it as a workflow secret, never as a literal value.
+    required: false
+  outline-api-url:
+    description: "OUTLINE_API_URL override, exported for later steps."
+    required: false
+  outline-collection:
+    description: >-
+      Default OUTLINE_COLLECTION, exported for later steps - lets
+      publish/publish-tree/delete-collection omit --collection.
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # A local (non-global) install into a scratch directory, with its
+    # node_modules/.bin prepended to PATH, rather than `npm install -g` -
+    # global installs of a git dependency were observed to fail prepare's
+    # build step (`tsc: not found`) in testing, while a local install
+    # reliably builds and links the bin correctly. This is also the more
+    # standard pattern for composite actions regardless.
+    - name: Install outline-render
+      shell: bash
+      # Inputs are passed via env: and read as $VAR, not interpolated
+      # directly into this script's ${{ }} text - avoids the well-known
+      # GitHub Actions script-injection class where an untrusted input
+      # value could break out of the intended argument.
+      env:
+        OUTLINE_RENDER_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        install_dir="${RUNNER_TEMP}/outline-render-install"
+        mkdir -p "$install_dir"
+        cd "$install_dir"
+        npm init -y >/dev/null
+        npm install "github:${GITHUB_REPOSITORY_OWNER}/outline-render#${OUTLINE_RENDER_VERSION}"
+        echo "$install_dir/node_modules/.bin" >> "$GITHUB_PATH"
+
+    - name: Export Outline env vars for later steps
+      shell: bash
+      env:
+        OUTLINE_API_KEY_INPUT: ${{ inputs.outline-api-key }}
+        OUTLINE_API_URL_INPUT: ${{ inputs.outline-api-url }}
+        OUTLINE_COLLECTION_INPUT: ${{ inputs.outline-collection }}
+      run: |
+        set -euo pipefail
+        {
+          [ -n "$OUTLINE_API_KEY_INPUT" ] && echo "OUTLINE_API_KEY=$OUTLINE_API_KEY_INPUT"
+          [ -n "$OUTLINE_API_URL_INPUT" ] && echo "OUTLINE_API_URL=$OUTLINE_API_URL_INPUT"
+          [ -n "$OUTLINE_COLLECTION_INPUT" ] && echo "OUTLINE_COLLECTION=$OUTLINE_COLLECTION_INPUT"
+        } >> "$GITHUB_ENV"
